@@ -122,5 +122,31 @@ model.fit(X_train, y_train)
 y_pred = model.predict(X_test)
 print(mean_absolute_error(y_test, y_pred))
 
+# Merge return_reason, returned_item and order_details
+df = pd.merge(
+    pd.merge(return_reason1, returned_item1, how='outer', on='RETURN_REASON_CODE'),
+    order_details1, how='outer', on='ORDER_DETAIL_CODE'
+)
 
+# Drop nans
+df = df.dropna()
 
+# Drop keys and stuff
+df.drop(columns=['RETURN_REASON_CODE', 'ORDER_DETAIL_CODE', 'RETURN_CODE', 'RETURN_DATE'], inplace=True)
+df = df[df.columns.drop(list(df.filter(regex='TRIAL')))]
+
+# Train classifiermodel (not a lineeair regression) to predict RETURN_DESCRIPTION_EN based on the other columns in the dataframe `df`
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
+
+X = df.drop(columns=['RETURN_DESCRIPTION_EN'])
+y = df['RETURN_DESCRIPTION_EN']
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.15, random_state=42)
+
+model = RandomForestClassifier()
+model.fit(X_train, y_train)
+
+y_pred = model.predict(X_test)
+
+print(accuracy_score(y_test, y_pred))
